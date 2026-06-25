@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation — ShepherdTech</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header><h1>ShepherdTech</h1></header>
+  <div class="container">
+    <div class="product-detail" id="result">
+      <p>Confirming your payment...</p>
+    </div>
+    <p style="text-align:center;"><a href="/" class="btn">Back to Home</a></p>
+  </div>
+  <footer>&copy; 2026 ShepherdTech</footer>
+
+  <script>
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    const result = document.getElementById('result');
+
+    async function verify() {
+      if (!ref) { result.innerHTML = '<p>No order reference found.</p>'; return; }
+      try {
+        const res = await fetch(`/api/orders/paystack/verify/${ref}`);
+        const data = await res.json();
+        if (data.success) {
+          result.innerHTML = `<h2 style="color:var(--deep-red);">Payment Successful 🎉</h2>
+            <p>Thank you! Check <strong>${data.order.customer_email}</strong> for your download link.</p>`;
+        } else {
+          result.innerHTML = '<p>We could not confirm this payment. Please contact support.</p>';
+        }
+      } catch (err) {
+        result.innerHTML = '<p>Something went wrong confirming your order.</p>';
+      }
+    }
+    verify();
+  </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product — ShepherdTech</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>ShepherdTech</h1>
+    <p>Practical tools for churches and pastors</p>
+  </header>
+
+  <div class="container">
+    <a href="/" class="btn" style="background:transparent;color:var(--deep-red);padding:0;">&larr; Back to all products</a>
+
+    <div class="product-detail" id="productDetail">
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <footer>&copy; 2026 ShepherdTech — built by Revd. Benjamin Obe</footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('slug');
+    const detail = document.getElementById('productDetail');
+
+    async function loadProduct() {
+      try {
+        const res = await fetch(`/api/products/${slug}`);
+        if (!res.ok) {
+          detail.innerHTML = '<p>Product not found.</p>';
+          return;
+        }
+        const p = await res.json();
+
+        if (p.type === 'service') {
+          detail.innerHTML = `
+            <h2 style="color:var(--deep-red);">${p.title}</h2>
+            <p>${p.description}</p>
+            <form class="checkout-form" id="serviceForm">
+              <input type="text" id="svcName" placeholder="Your name" required>
+              <input type="email" id="svcEmail" placeholder="Your email" required>
+              <input type="text" id="svcChurch" placeholder="Church name (optional)">
+              <textarea id="svcDetails" placeholder="Tell us what you need" rows="4" required></textarea>
+              <button class="btn" type="submit">Request This Service</button>
+            </form>
+            <p id="svcMessage"></p>`;
+
+          document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+              name: document.getElementById('svcName').value,
+              email: document.getElementById('svcEmail').value,
+              churchName: document.getElementById('svcChurch').value,
+              serviceType: p.slug,
+              details: document.getElementById('svcDetails').value
+            };
+            const r = await fetch('/api/services/request', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            document.getElementById('svcMessage').textContent = data.success
+              ? "Thank you! We'll be in touch within 24 hours."
+              : 'Something went wrong. Please try again.';
+          });
+
+        } else {
+          detail.innerHTML = `
+            <h2 style="color:var(--deep-red);">${p.title}</h2>
+            <p>${p.description}</p>
+            <p class="price">₦${p.price_ngn || '—'} ${p.price_usd ? '/ $' + p.price_usd : ''}</p>
+            <form class="checkout-form" id="checkoutForm">
+              <input type="text" id="custName" placeholder="Your name" required>
+              <input type="email" id="custEmail" placeholder="Your email" required>
+              <button class="btn" type="submit">Pay with Paystack</button>
+            </form>
+            <p id="checkoutMessage"></p>`;
+
+          document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+              productSlug: p.slug,
+              name: document.getElementById('custName').value,
+              email: document.getElementById('custEmail').value
+            };
+            const r = await fetch('/api/orders/paystack/init', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (data.authorization_url) {
+              window.location.href = data.authorization_url;
+            } else {
+              document.getElementById('checkoutMessage').textContent = 'Could not start checkout. Please try again.';
+            }
+          });
+        }
+      } catch (err) {
+        detail.innerHTML = '<p>Something went wrong loading this product.</p>';
+      }
+    }
+
+    loadProduct();
+  </script>
+</body>
+</html>
