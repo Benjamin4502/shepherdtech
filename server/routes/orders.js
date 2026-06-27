@@ -85,13 +85,17 @@ router.get('/paystack/verify/:reference', async (req, res) => {
 
     // Deliver digital product via email
     if (product && product.type === 'digital' && product.file_url) {
-      await sendDeliveryEmail({
-        to: order.customer_email,
-        name: order.customer_name,
-        productTitle: product.title,
-        downloadUrl: product.file_url
-      });
-      await pool.query(`UPDATE orders SET status = 'delivered', delivered_at = NOW() WHERE id = $1`, [order.id]);
+      try {
+        await sendDeliveryEmail({
+          to: order.customer_email,
+          name: order.customer_name,
+          productTitle: product.title,
+          downloadUrl: product.file_url
+        });
+        await pool.query(`UPDATE orders SET status = 'delivered', delivered_at = NOW() WHERE id = $1`, [order.id]);
+      } catch (emailErr) {
+        console.error('Email delivery failed but payment was confirmed:', emailErr.message);
+      }
     }
 
     res.json({ success: true, order, product });
