@@ -20,12 +20,20 @@ async function sendDeliveryEmail({ to, name, productTitle, downloadUrl }) {
       <p style="margin-top:30px;">In His service,<br/>ShepherdTech Team</p>
     </div>`;
 
-  return resend.emails.send({
+  const result = await resend.emails.send({
     from: process.env.FROM_EMAIL,
     to,
     subject: `Your ${productTitle} is ready`,
     html
   });
+
+  console.log('RESEND_DELIVERY_RESULT:', JSON.stringify(result));
+
+  if (result.error) {
+    throw new Error('Resend failed: ' + JSON.stringify(result.error));
+  }
+
+  return result;
 }
 
 async function sendLeadMagnetEmail({ to, downloadUrl }) {
@@ -43,12 +51,20 @@ async function sendLeadMagnetEmail({ to, downloadUrl }) {
       churches like yours save time and reach more people. — Revd. Benjamin</p>
     </div>`;
 
-  return resend.emails.send({
+  const result = await resend.emails.send({
     from: process.env.FROM_EMAIL,
     to,
     subject: 'Your free ShepherdTech resource',
     html
   });
+
+  console.log('RESEND_LEAD_RESULT:', JSON.stringify(result));
+
+  if (result.error) {
+    throw new Error('Resend failed: ' + JSON.stringify(result.error));
+  }
+
+  return result;
 }
 
 module.exports = { sendDeliveryEmail, sendLeadMagnetEmail };
